@@ -1,0 +1,6 @@
+.stockForm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 20px;
+}
