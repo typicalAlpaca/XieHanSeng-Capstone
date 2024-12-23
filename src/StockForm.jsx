@@ -6,7 +6,7 @@ import { stockContext } from './StockContext.jsx'
 
 import './StockForm.css'
 
-const test = false;
+const test = true;
 const testURL = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo";
 const apiURL = "https://www.alphavantage.co/query";
 const apiKey = "611APNXO518ZI35V";
@@ -79,12 +79,8 @@ function Form() {
   }, [stocks.length]);
 
   const addStock = useCallback(() => {
-    const symbol = document.getElementById("stockSymbol");
-    const qty = document.getElementById("stockQuantity");
-    const price = document.getElementById("stockPurchasePrice");
-
     // Form checking
-    if(!symbol.value || !qty.value || !price.value){
+    if(!stockSymbol || !stockQuantity || !stockPurchasePrice){
       alert("Invalid form input, please reenter");
       return;
     }
@@ -92,13 +88,13 @@ function Form() {
     // API Check for validity of stock prior to adding. 
     const queryParams = {
       function: "TIME_SERIES_DAILY",
-      symbol: symbol.value,
+      symbol: stockSymbol,
       apikey: apiKey,
     };
 
     // Setting url
     const url = test ? testURL : `${apiURL}?${new URLSearchParams(queryParams).toString()}`;
-    
+
     fetch(url).then((res) => {
       if(res.ok){
         return res.json();
@@ -111,14 +107,14 @@ function Form() {
         throw new Error("Invalid stock symbol. Please double-check valid stock symbols from 'https://www.alphavantage.co/documentation' under TIME_SERIES_DAILY");
       }
       
-      let purchasePrice = parseFloat(price.value).toFixed(2);
+      let purchasePrice = parseFloat(stockPurchasePrice).toFixed(2);
       let currentPrice = test ? parseFloat(data["Global Quote"]["05. price"]).toFixed(2) : parseFloat(data["Time Series (Daily)"][ytdDate]["4. close"]).toFixed(2);
-      let profitLoss = ((currentPrice - purchasePrice) * parseFloat(qty.value)).toFixed(2);
+      let profitLoss = ((currentPrice - purchasePrice) * parseFloat(stockQuantity)).toFixed(2);
 
       setStocks([...stocks, {
         id: Object.keys(stocks).length + 1,
-        symbol: symbol.value,
-        qty: parseInt(qty.value),
+        symbol: stockSymbol,
+        qty: parseInt(stockQuantity),
         purchasePrice: purchasePrice,
         currentPrice: currentPrice,
         profitLoss: profitLoss
@@ -153,7 +149,7 @@ function Form() {
         label="Quantity"
         placeholder="Quantity"
         value={stockQuantity}
-        onChange={event=> setStockQuantity(event.target.value)}/>
+        onChange={event => setStockQuantity(event.target.value)}/>
       <TextField
         id="stockPurchasePrice"
         variant="filled"
@@ -162,7 +158,7 @@ function Form() {
         label="Purchase Price"
         placeholder="Purchase Price"
         value={stockPurchasePrice}
-        onChange={event=> setStockPurchasePrice(event.target.value)}/>
+        onChange={event => setStockPurchasePrice(event.target.value)}/>
       <Button type="submit" onClick={addStock} variant="contained">Add Stock</Button>
     </form>
 )}
