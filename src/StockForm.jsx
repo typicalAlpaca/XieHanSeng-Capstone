@@ -9,9 +9,9 @@ import './StockForm.css'
 const test = true;
 const testURL = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo";
 const apiURL = "https://www.alphavantage.co/query";
-const apiKey = "611APNXO518ZI35V";
+const apiKey = "611APNXO518ZI35V"; // Yes haha not supposed to provide a public API key but honestly its free so...
 
-// Current API not returning stock prices for yesterday date. Using fixed date now
+// Current API not returning stock prices for yesterday date. Using fixed date for now.
 // const ytdDate = GetYesterdayDate();
 const ytdDate = "2024-12-12";
 
@@ -33,52 +33,62 @@ function Form() {
   const [stockPurchasePrice, setStockPurchasePrice] = useState('');
   const {stocks, setStocks} = useContext(stockContext);
 
-  const fetchCurrentPrices = useCallback(async () => {
-    const fetchPromises = stocks.map(async (stock) => {
-        // For each stock, fetch the current closing price and recalculate its new profitLoss margin
-        const queryParams = {
-            function: "TIME_SERIES_DAILY",
-            symbol: stock.symbol,
-            apikey: apiKey,
-        };
-    
-        // Setting url
-        const url = test ? testURL : `${apiURL}?${new URLSearchParams(queryParams).toString()}`;
-        
-        return fetch(url).then(res => {
-            if(res.ok){
-                return res.json();
-            } else{
-                throw new Error(`Failed to fetch data for ${stock.symbol} due to error: ${res.status}`);
-            }
-        }).then(data => {
-            if("Error Message" in data){
-                throw new Error("Invalid stock symbol. Please double-check valid stock symbols from 'https://www.alphavantage.co/documentation' under TIME_SERIES_DAILY");
-            }
-            
-            let currentPrice = test ? parseFloat(data["Global Quote"]["05. price"]).toFixed(2) : parseFloat(data["Time Series (Daily)"][ytdDate]['4. close']).toFixed(2);
-            let profitLoss = ((currentPrice - stock.purchasePrice) * stock.qty).toFixed(2);
+  // Function for retrieving stock prices via the AlphaVantage API.
+  // Using useCallback hook to prevent recreation of this function
+  const fetchPrice = useCallback(async (stock) => {
+    // Fetch current closing price and calculate profitLoss margin    
+    const queryParams = {
+      function: "TIME_SERIES_DAILY",
+      symbol: stock.symbol,
+      apikey: apiKey,
+    };
 
-            console.log(`Updated ${stock.id}: ${stock.symbol} current price`);
-            return {...stock, currentPrice: currentPrice, profitLoss: profitLoss};
-        });
+    // Setting url depending on test or practical
+    const url = test ? testURL : `${apiURL}?${new URLSearchParams(queryParams).toString()}`;
+
+    return fetch(url).then(res => {
+      if(res.ok){
+        return res.json();
+      } else {
+        throw new Error(`Failed to fetch data for ${stock.symbol} due to error code: ${res.status}`);
+      }
+    }).then(data => {
+      // Catch invalid stock symbols
+      if("Error Message" in data){
+        throw new Error("Invalid stock symbol. Please double-check valid stock symbols from 'https://www.alphavantage.co/documentation' under TIME_SERIES_DAILY");
+      }
+      
+      let currentPrice = test ? parseFloat(data["Global Quote"]["05. price"]).toFixed(2) : parseFloat(data["Time Series (Daily)"][ytdDate]['4. close']).toFixed(2);
+      let profitLoss = ((currentPrice - stock.purchasePrice) * stock.qty).toFixed(2);
+
+      console.log(`Fetched ${stock.id}: ${stock.symbol} current price and updated its profitLoss`);
+      return {...stock, currentPrice: currentPrice, profitLoss: profitLoss};
+    }).catch(err => {
+      alert(err);
+      return {};
     });
+  }, []);
 
+  // Function for updating prices of all stocks
+  const fetchCurrentPrices = async () => {
+    console.log("Updating current prices for all stocks in stockList...");
+    const fetchPromises = stocks.map(fetchPrice);
     try {
         const updatedStocks = await Promise.all(fetchPromises);
         setStocks(updatedStocks);
+        console.log("Successfully updated all stock current prices");
     } catch (err){
         alert(err);
     }
-  }, [stocks]);
+  };
 
-  // Set dependency to stocks.length so that it only updates when addStock successfully
-  // adds a stock, not when fetchCurrentPrices updates stock prices in stocks
+  // Set dependency to stocks.length so that it only updates all stock prices when addStock
+  // successfully adds a stock, not when fetchCurrentPrices updates stock prices in stocks
   useEffect(() => {
     fetchCurrentPrices();
   }, [stocks.length]);
 
-  const addStock = useCallback(() => {
+  const addStock = async () => {
     // Form checking
     if(!stockSymbol || !stockQuantity || !stockPurchasePrice){
       alert("Invalid form input, please reenter");
@@ -86,49 +96,28 @@ function Form() {
     }
 
     // API Check for validity of stock prior to adding. 
-    const queryParams = {
-      function: "TIME_SERIES_DAILY",
+    let stock = await fetchPrice({
+      id: Object.keys(stocks).length + 1,
       symbol: stockSymbol,
-      apikey: apiKey,
-    };
+      qty: parseInt(stockQuantity),
+      purchasePrice: parseInt(stockPurchasePrice).toFixed(2),
+      currentPrice: 0,
+      profitLoss: 0
+    });
 
-    // Setting url
-    const url = test ? testURL : `${apiURL}?${new URLSearchParams(queryParams).toString()}`;
+    // If return {}, it means fetchPrice threw an error which means stock shouldn't be added.
+    if(stock == {}){
+      return;
+    }
 
-    fetch(url).then((res) => {
-      if(res.ok){
-        return res.json();
-      } else{
-        throw new Error(res.status);
-      }
-    }).then((data) => {
-      // Append new stock added
-      if("Error Message" in data){
-        throw new Error("Invalid stock symbol. Please double-check valid stock symbols from 'https://www.alphavantage.co/documentation' under TIME_SERIES_DAILY");
-      }
-      
-      let purchasePrice = parseFloat(stockPurchasePrice).toFixed(2);
-      let currentPrice = test ? parseFloat(data["Global Quote"]["05. price"]).toFixed(2) : parseFloat(data["Time Series (Daily)"][ytdDate]["4. close"]).toFixed(2);
-      let profitLoss = ((currentPrice - purchasePrice) * parseFloat(stockQuantity)).toFixed(2);
+    // Add valid stock to stocks
+    setStocks([...stocks, stock]);
 
-      setStocks([...stocks, {
-        id: Object.keys(stocks).length + 1,
-        symbol: stockSymbol,
-        qty: parseInt(stockQuantity),
-        purchasePrice: purchasePrice,
-        currentPrice: currentPrice,
-        profitLoss: profitLoss
-      }])
-    
-      // Clear form inputs
-      setStockSymbol("");
-      setStockQuantity("");
-      setStockPurchasePrice("");
-
-    }).catch(error => {
-      alert(error.message);
-    })
-  }, [stocks]);
+    // Clear form inputs
+    setStockSymbol("");
+    setStockQuantity("");
+    setStockPurchasePrice("");
+  };
 
   return (
     <form className="stockForm" onSubmit={event => event.preventDefault()}>
