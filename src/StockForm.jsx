@@ -84,9 +84,7 @@ function Form() {
 
   // Set dependency to stocks.length so that it only updates all stock prices when addStock
   // successfully adds a stock, not when fetchCurrentPrices updates stock prices in stocks
-  useEffect(() => {
-    fetchCurrentPrices();
-  }, [stocks.length]);
+  useEffect(fetchCurrentPrices, [stocks.length]);
 
   const addStock = async () => {
     // Form checking
