@@ -6,7 +6,7 @@ import { stockContext } from './StockContext.jsx'
 
 import './StockForm.css'
 
-const test = true;
+const test = false;
 const testURL = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo";
 const apiURL = "https://www.alphavantage.co/query";
 const apiKey = "611APNXO518ZI35V"; // Yes haha not supposed to provide a public API key but honestly its free so...
@@ -65,7 +65,7 @@ function Form() {
       return {...stock, currentPrice: currentPrice, profitLoss: profitLoss};
     }).catch(err => {
       alert(err);
-      return {};
+      return false;
     });
   }, []);
 
@@ -106,7 +106,7 @@ function Form() {
     });
 
     // If return {}, it means fetchPrice threw an error which means stock shouldn't be added.
-    if(stock == {}){
+    if(!stock){
       return;
     }
 
