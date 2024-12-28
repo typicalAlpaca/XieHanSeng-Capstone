@@ -57,6 +57,10 @@ function Form() {
       if("Error Message" in data){
         throw new Error("Invalid stock symbol. Please double-check valid stock symbols from 'https://www.alphavantage.co/documentation' under TIME_SERIES_DAILY");
       }
+
+      if("Information" in data){
+        throw new Error("Reached 25 API call limit for the day. Set test to false for today to continue using.");
+      }
       
       let currentPrice = test ? parseFloat(data["Global Quote"]["05. price"]).toFixed(2) : parseFloat(data["Time Series (Daily)"][ytdDate]['4. close']).toFixed(2);
       let profitLoss = ((currentPrice - stock.purchasePrice) * stock.qty).toFixed(2);
