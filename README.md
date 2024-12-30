@@ -1,13 +1,14 @@
 # Heicoders Academy SE100 Capstone Project
-
-Author: **Xie Han Seng**
+## Author: Xie Han Seng
 
 This repository tracks the progress and also acts as the submission platform for the SE100 Capstone Project for Xie Han Seng.
-<br><br>
+
+Deployed Website URL: https://typicalalpaca.github.io/XieHanSeng-Capstone/
+
 
 # Noted challenges with requirements:
 1. Free AlphaVantage API does not provide latest (using the previous day) prices. Since date is generated automatically using computer's date value, this throws an error for invalid attempt to access a non-existent object retrieved from the API. Currently hard-coded just to show functionality.
-<br><br><br>
+
 
 # Requirements stated for SE100 Capstone Project
 
@@ -44,6 +45,7 @@ This repository tracks the progress and also acts as the submission platform for
     - **`useEffect`**: Fetch the current stock prices from the API when the component mounts and whenever the stock list is updated.
     - **`useCallback`**: Memoize the function that fetches the stock data from the API to avoid unnecessary re-creations.
     - **`useContext`**: Access the stock list state from the **`StockContext`** in the necessary components.
+
 
 ## Marking Rubrics
 1. **Functionality (40%)**: The finance dashboard should fulfil all the functional requirements mentioned above. The stock form should allow users to enter stock purchases, and the stock list should display the entered stocks along with their current prices and profit/loss.
